@@ -1,7 +1,7 @@
 /*
   OpenMQTTGateway  - ESP8266 or Arduino program for home automation
 
-   Act as a wifi or ethernet gateway between your 433mhz/infrared IR signal  and a MQTT broker
+   Act as a wifi or ethernet gateway between your 433mhz/IR signal and a MQTT broker.
    Send and receiving command by MQTT
 
   This program enables to:
@@ -42,7 +42,7 @@
 #include "User_config.h"
 #include <PubSubClient.h>
 
-// array to store previous received RFs, IRs codes and their timestamps
+// Array to store previous received RF and IR codes and their timestamps.
 #ifdef ESP8266
 #define array_size 12
 unsigned long ReceivedSignal[array_size][2] ={{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0},{0,0}};
@@ -52,7 +52,7 @@ unsigned long ReceivedSignal[array_size][2] ={{0,0},{0,0},{0,0},{0,0}};
 #endif
 /*------------------------------------------------------------------------*/
 
-//adding this to bypass the problem of the arduino builder issue 50
+// Adding this to bypass the problem of the Arduino builder issue 50.
 void callback(char*topic, byte* payload,unsigned int length);
 
 #ifdef ESP8266
@@ -66,10 +66,10 @@ void callback(char*topic, byte* payload,unsigned int length);
   EthernetClient eClient;
 #endif
 
-// client parameters
+// Client parameters
 PubSubClient client(mqtt_server, mqtt_port, callback, eClient);
 
-//MQTT last attemps reconnection date
+// MQTT last attemps reconnection date
 unsigned long lastReconnectAttempt = 0;
 
 boolean reconnect() {
@@ -111,7 +111,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   memcpy(p,payload,length);
   // Conversion to a printable string
   p[length] = '\0';
-  //launch the function to treat received data
+  // Launch the function to treat received data
   receivingMQTT(topic,(char *) p);
   // Free the memory
   free(p);
@@ -120,9 +120,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup()
 {
   #ifdef ESP8266
-    //Launch serial for debugging purposes
+    // Launch serial for debugging purposes
     Serial.begin(SERIAL_BAUD, SERIAL_8N1, SERIAL_TX_ONLY);
-    //Begining wifi connection in case of ESP8266
+    // Begining wifi connection in case of ESP8266
     setup_wifi();
     // Port defaults to 8266
     ArduinoOTA.setPort(ota_port);
@@ -152,9 +152,9 @@ void setup()
     });
     ArduinoOTA.begin();
   #else
-    //Launch serial for debugging purposes
+    // Launch serial for debugging purposes
     Serial.begin(SERIAL_BAUD);
-    //Begining ethernet connection in case of Arduino + W5100
+    // Begining ethernet connection in case of Arduino + W5100
     setup_ethernet();
   #endif
 
@@ -200,7 +200,7 @@ void setup_wifi() {
   IPAddress subnet_adress(subnet);
   IPAddress dns_adress(Dns);
   WiFi.begin(wifi_ssid, wifi_password);
-  //WiFi.config(ip_adress,gateway_adress,subnet_adress); //Uncomment this line if you want to use advanced network config
+  //WiFi.config(ip_adress,gateway_adress,subnet_adress); // Uncomment this line if you want to use advanced network config
     
   trc(F("OpenMQTTGateway mac: "));
   Serial.println(WiFi.macAddress()); 
@@ -217,7 +217,7 @@ void setup_wifi() {
 }
 #else
 void setup_ethernet() {
-  Ethernet.begin(mac, ip); //Comment and uncomment the following line if you want to use advanced network config
+  Ethernet.begin(mac, ip); // Comment and uncomment the following line if you want to use advanced network config
   //Ethernet.begin(mac, ip, Dns, gateway, subnet);
   trc(F("OpenMQTTGateway ip: "));
   Serial.println(Ethernet.localIP());
@@ -227,8 +227,8 @@ void setup_ethernet() {
 
 void loop()
 {
-  //MQTT client connexion management
-  if (!client.connected()) { // not connected
+  // MQTT client connection management
+  if (!client.connected()) { // Not connected
     unsigned long now = millis();
     if (now - lastReconnectAttempt > 5000) {
       lastReconnectAttempt = now;
@@ -237,7 +237,7 @@ void loop()
         lastReconnectAttempt = 0;
       }
     }
-  } else { //connected
+  } else { // Connected
     // MQTT loop
     client.loop();
 
@@ -246,19 +246,19 @@ void loop()
     #endif
 
     #ifdef ZsensorBME280
-      MeasureTempHumAndPressure(); //Addon to measure Temperature, Humidity, Pressure and Altitude with a Bosch BME280
+      MeasureTempHumAndPressure(); // Addon to measure Temperature, Humidity, Pressure and Altitude with a Bosch BME280
     #endif
     #ifdef ZsensorBH1750
-      MeasureLightIntensity(); //Addon to measure Light Intensity with a BH1750
+      MeasureLightIntensity(); // Addon to measure Light Intensity with a BH1750
     #endif
     #ifdef ZsensorDHT
-      MeasureTempAndHum(); //Addon to measure the temperature with a DHT
+      MeasureTempAndHum(); // Addon to measure the temperature with a DHT
     #endif
     #ifdef ZsensorHCSR501
       MeasureHCSR501();
     #endif
     #ifdef ZsensorADC
-      MeasureADC(); //Addon to measure the analog value of analog pin
+      MeasureADC(); // Addon to measure the analog value of analog pin
     #endif
     // Receive loop, if data received by RF433 or IR send it by MQTT
     #ifdef ZgatewayRF
@@ -293,11 +293,11 @@ void loop()
 
 void storeValue(long MQTTvalue){
     unsigned long now = millis();
-    // find oldest value of the buffer
+    // Find oldest value of the buffer
     int o = getMin();
     trc(F("Min ind: "));
     trc(String(o));
-    // replace it by the new one
+    // Replace it by the new one
     ReceivedSignal[o][0] = MQTTvalue;
     ReceivedSignal[o][1] = now;
     trc(F("store code :"));
@@ -324,11 +324,11 @@ int getMin(){
 
 boolean isAduplicate(long value){
 trc(F("isAduplicate"));
-// check if the value has been already sent during the last time_avoid_duplicate
+// Check if the value has been already sent during the last time_avoid_duplicate
 for (int i = 0; i < array_size;i++){
  if (ReceivedSignal[i][0] == value){
       unsigned long now = millis();
-      if (now - ReceivedSignal[i][1] < time_avoid_duplicate){ // change
+      if (now - ReceivedSignal[i][1] < time_avoid_duplicate){ // Change
       trc(F("--don't pub. duplicate--"));
       return true;
     }
@@ -339,10 +339,10 @@ return false;
 
 void receivingMQTT(char * topicOri, char * datacallback) {
 
-   if (strstr(topicOri, subjectMultiGTWKey) != NULL) // storing received value so as to avoid publishing this value if it has been already sent by this or another OpenMQTTGateway
+   if (strstr(topicOri, subjectMultiGTWKey) != NULL) // Storing received value so as to avoid publishing this value if it has been already sent by this or another OpenMQTTGateway
    {
       trc(F("Storing signal"));
-      unsigned long data = strtoul(datacallback, NULL, 10); // we will not be able to pass values > 4294967295
+      unsigned long data = strtoul(datacallback, NULL, 10); // We will not be able to pass values > 4294967295
       storeValue(data);
       trc(F("Data stored"));
    }
@@ -361,7 +361,7 @@ void receivingMQTT(char * topicOri, char * datacallback) {
 #endif
 }
 
-//trace
+// Trace
 void trc(String msg){
   if (TRACE) {
   Serial.println(msg);
